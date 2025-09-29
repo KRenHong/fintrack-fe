@@ -5,7 +5,7 @@ import {
   useQueries,
 } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Category, Budget } from "@/types/domain";
+import { Budget } from "@/types/domain";
 import {
   Paper,
   Stack,
