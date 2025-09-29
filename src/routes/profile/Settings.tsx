@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import {
-  Paper,
-  Stack,
-  Typography,
-  TextField,
-  Button,
-  Divider,
-} from "@mui/material";
+import { Paper, Stack, Typography, TextField, Button } from "@mui/material";
 import { useSnackbar } from "@/components/feedback/SnackbarProvider";
 
 export default function Settings() {
