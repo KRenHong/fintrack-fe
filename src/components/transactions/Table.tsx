@@ -1,4 +1,4 @@
-import { Transaction } from "@/types/domain";
+// components/transactions/Table.tsx
 import {
   Table as MuiTable,
   TableHead,
@@ -6,14 +6,18 @@ import {
   TableCell,
   TableBody,
 } from "@mui/material";
+import { Transaction } from "@/types/domain";
 
-export default function Table({ rows }: { rows: Transaction[] }) {
+type Row = Transaction & { category_name?: string };
+
+export default function Table({ rows }: { rows: Row[] }) {
   return (
     <MuiTable size="small">
       <TableHead>
         <TableRow>
           <TableCell>Date</TableCell>
           <TableCell>Kind</TableCell>
+          <TableCell>Category</TableCell>
           <TableCell align="right">Amount</TableCell>
           <TableCell>Note</TableCell>
         </TableRow>
@@ -23,6 +27,7 @@ export default function Table({ rows }: { rows: Transaction[] }) {
           <TableRow key={r.id} hover>
             <TableCell>{r.occurred_on}</TableCell>
             <TableCell>{r.kind === "EX" ? "Expense" : "Income"}</TableCell>
+            <TableCell>{r.category_name || "—"}</TableCell>
             <TableCell align="right">{r.amount}</TableCell>
             <TableCell>{r.note}</TableCell>
           </TableRow>

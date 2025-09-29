@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, asArray } from "@/lib/api";
 import {
   Paper,
   Stack,
@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
+import { Category } from "@/types/domain";
 
 export default function Edit() {
   const { id } = useParams();
@@ -21,14 +22,31 @@ export default function Edit() {
     queryFn: async () => (await api.get(`/transactions/${id}/`)).data,
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await api.get("/categories/");
+      return asArray(data) as Category[];
+    },
+  });
+
   const [form, setForm] = useState({
     kind: "EX",
     amount: "",
     occurred_on: "",
     note: "",
+    category: "" as number | "",
   });
+
   useEffect(() => {
-    if (data) setForm(data);
+    if (data)
+      setForm({
+        kind: data.kind,
+        amount: data.amount,
+        occurred_on: data.occurred_on,
+        note: data.note ?? "",
+        category: (data.category ?? "") as any,
+      });
   }, [data]);
 
   const save = useMutation({
@@ -54,6 +72,21 @@ export default function Edit() {
         >
           <MenuItem value="EX">Expense</MenuItem>
           <MenuItem value="IN">Income</MenuItem>
+        </TextField>
+        <TextField
+          select
+          label="Category"
+          value={form.category}
+          onChange={(e) =>
+            setForm({ ...form, category: Number(e.target.value) })
+          }
+        >
+          <MenuItem value="">None</MenuItem>
+          {categories.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
         </TextField>
         <TextField
           label="Amount"

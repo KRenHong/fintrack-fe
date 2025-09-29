@@ -1,3 +1,7 @@
+// src/components/transactions/Filters.tsx
+import { useQuery } from "@tanstack/react-query";
+import { api, asArray } from "@/lib/api";
+import { Category } from "@/types/domain";
 import { Stack, TextField, MenuItem } from "@mui/material";
 
 export type Filters = {
@@ -5,7 +9,9 @@ export type Filters = {
   kind: "" | "IN" | "EX";
   min?: string;
   max?: string;
+  category?: number | "";
 };
+
 export default function Filters({
   value,
   onChange,
@@ -13,6 +19,20 @@ export default function Filters({
   value: Filters;
   onChange: (f: Filters) => void;
 }) {
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await api.get("/categories/");
+      return asArray<Category>(data);
+    },
+    retry: 1,
+    staleTime: 15_000,
+  });
+
+  const categories: Category[] = Array.isArray(categoriesData)
+    ? categoriesData
+    : [];
+
   return (
     <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
       <TextField
@@ -24,7 +44,9 @@ export default function Filters({
         select
         label="Kind"
         value={value.kind}
-        onChange={(e) => onChange({ ...value, kind: e.target.value as any })}
+        onChange={(e) =>
+          onChange({ ...value, kind: e.target.value as Filters["kind"] })
+        }
         sx={{ minWidth: 160 }}
       >
         <MenuItem value="">All</MenuItem>
@@ -45,6 +67,25 @@ export default function Filters({
         value={value.max || ""}
         onChange={(e) => onChange({ ...value, max: e.target.value })}
       />
+      <TextField
+        select
+        label="Category"
+        value={value.category ?? ""}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            category: e.target.value ? Number(e.target.value) : "",
+          })
+        }
+        sx={{ minWidth: 180 }}
+      >
+        <MenuItem value="">All</MenuItem>
+        {categories.map((c) => (
+          <MenuItem key={c.id} value={c.id}>
+            {c.name}
+          </MenuItem>
+        ))}
+      </TextField>
     </Stack>
   );
 }

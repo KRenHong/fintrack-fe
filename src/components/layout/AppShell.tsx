@@ -32,6 +32,15 @@ export default function AppShell() {
           <Button component={Link} to="/transactions">
             Transactions
           </Button>
+          <Button component={Link} to="/budgets">
+            Budgets
+          </Button>
+          <Button component={Link} to="/categories">
+            Categories
+          </Button>
+          <Button component={Link} to="/profile">
+            Profile
+          </Button>
           <Box sx={{ flex: 1 }} />
           <Button variant="contained" onClick={logout}>
             Logout

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, asArray } from "@/lib/api";
 import {
   Paper,
   Stack,
@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { Category } from "@/types/domain";
 
 export default function Create() {
   const qc = useQueryClient();
@@ -19,10 +20,20 @@ export default function Create() {
     amount: "",
     occurred_on: "",
     note: "",
+    category: "" as number | "",
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await api.get("/categories/");
+      return asArray(data) as Category[];
+    },
   });
 
   const m = useMutation({
-    mutationFn: async () => (await api.post("/transactions/", form)).data,
+    mutationFn: async (data: typeof form) =>
+      (await api.post("/transactions/", data)).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       nav("/transactions");
@@ -45,7 +56,23 @@ export default function Create() {
           <MenuItem value="IN">Income</MenuItem>
         </TextField>
         <TextField
+          select
+          label="Category"
+          value={form.category}
+          onChange={(e) =>
+            setForm({ ...form, category: Number(e.target.value) })
+          }
+        >
+          <MenuItem value="">None</MenuItem>
+          {categories.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
           label="Amount"
+          type="number"
           value={form.amount}
           onChange={(e) => setForm({ ...form, amount: e.target.value })}
         />
@@ -64,7 +91,14 @@ export default function Create() {
         <Stack direction="row" gap={2}>
           <Button
             variant="contained"
-            onClick={() => m.mutate()}
+            onClick={() =>
+              m.mutate({
+                ...form,
+                amount: form.amount
+                  ? parseFloat(form.amount).toFixed(2)
+                  : "0.00",
+              })
+            }
             disabled={m.isPending}
           >
             Save

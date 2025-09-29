@@ -21,3 +21,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const asArray = <T>(data: any): T[] =>
+  Array.isArray(data) ? data : data?.results ?? [];
