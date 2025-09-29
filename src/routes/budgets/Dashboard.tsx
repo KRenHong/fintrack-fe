@@ -20,7 +20,6 @@ import {
   TableBody,
   Chip,
   Box,
-  Grid,
   Link as MuiLink,
   Divider,
   useTheme,
@@ -41,28 +40,29 @@ export default function BudgetDashboard() {
   const qc = useQueryClient();
   const theme = useTheme();
 
+  // Categories (fast hook with cache/hydration)
   const { list: categories } = useCategories();
-
   const catName = (id: number) =>
     categories.find((c) => c.id === id)?.name || `#${id}`;
   const catColor = (id: number) =>
     categories.find((c) => c.id === id)?.color || undefined;
 
-  // --- Builder state (left)
+  // Builder state (left)
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [limit, setLimit] = useState("");
-  // --- Filters (right)
+
+  // Filters (right)
   const [month, setMonth] = useState<string>(
     new Date().toISOString().slice(0, 7)
   ); // YYYY-MM
 
-  // single pair progress (for builder preview)
+  // Selected (category, month) progress
   const progress = useBudgetAlert(
     typeof categoryId === "number" ? categoryId : undefined,
     month
   );
 
-  // choose bar color by state
+  // Progress bar color
   const stateColor =
     progress?.state === "over"
       ? theme.palette.error.main
@@ -73,6 +73,7 @@ export default function BudgetDashboard() {
           catColor(categoryId)) ||
         theme.palette.primary.main;
 
+  // Create/Update budget
   const save = useMutation({
     mutationFn: async () =>
       (
@@ -88,7 +89,7 @@ export default function BudgetDashboard() {
     },
   });
 
-  // --- Budgets list
+  // Budgets list
   const { data: budgetsData } = useQuery({
     queryKey: ["budgets"],
     queryFn: async () => asArray<Budget>((await api.get("/budgets/")).data),
@@ -101,7 +102,7 @@ export default function BudgetDashboard() {
     [budgets, month]
   );
 
-  // Per-row progress queries (live)
+  // Per-row live progress
   const progressQueries = useQueries({
     queries: budgetsForMonth.map((b) => ({
       queryKey: ["budget-progress", b.category, b.month],
@@ -128,107 +129,110 @@ export default function BudgetDashboard() {
       </Typography>
 
       {/* ---------- Top row: Left = Create/Update, Right = Filters ---------- */}
-      <Grid container spacing={2}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "7fr 5fr" },
+          gap: 2,
+          alignItems: "stretch",
+        }}
+      >
         {/* LEFT: Create/Update */}
-        <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 2 }}>
-            <Stack gap={2}>
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                gap={2}
-                alignItems={{ sm: "center" }}
-              >
-                <TextField
-                  select
-                  label="Category"
-                  sx={{ minWidth: 220 }}
-                  value={categoryId}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCategoryId(v === "" ? "" : Number(v));
-                  }}
-                >
-                  <MenuItem value="" disabled>
-                    Select a category
-                  </MenuItem>
-                  {categories.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                {/* Link to manage categories */}
-                <MuiLink component={Link} to="/categories" underline="hover">
-                  Manage categories
-                </MuiLink>
-
-                <TextField
-                  label="Monthly limit (MYR)"
-                  value={limit}
-                  onChange={(e) => setLimit(e.target.value)}
-                  sx={{ minWidth: 220 }}
-                />
-
-                <Button
-                  variant="contained"
-                  onClick={() => save.mutate()}
-                  disabled={save.isPending || !categoryId || !limit}
-                >
-                  Save budget
-                </Button>
-              </Stack>
-
-              {/* Preview progress for the selected pair (single % + colored bar) */}
-              <Divider />
-              <Stack gap={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Progress (selected)
-                </Typography>
-                {progress ? (
-                  <Stack direction="row" alignItems="center" gap={2}>
-                    <Chip
-                      size="small"
-                      label={catName(categoryId as number) || "—"}
-                      sx={{
-                        bgcolor: catColor(categoryId as number) || "#e5e7eb",
-                        color: "#fff",
-                      }}
-                    />
-                    <Box flex={1}>
-                      <ProgressBar
-                        ratio={Number(progress.ratio)}
-                        color={stateColor}
-                        showPercent
-                      />
-                    </Box>
-                  </Stack>
-                ) : (
-                  <Typography variant="body2">
-                    No budget configured for this category & month.
-                  </Typography>
-                )}
-              </Stack>
-            </Stack>
-          </Paper>
-        </Grid>
-
-        {/* RIGHT: Filters */}
-        <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Filters
-            </Typography>
+        <Paper sx={{ p: 2, height: "100%" }}>
+          <Stack gap={2}>
             <Stack
               direction={{ xs: "column", sm: "row" }}
               gap={2}
               alignItems={{ sm: "center" }}
             >
-              <MonthPicker value={month} onChange={setMonth} />
+              <TextField
+                select
+                label="Category"
+                sx={{ minWidth: 220 }}
+                value={categoryId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCategoryId(v === "" ? "" : Number(v));
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select a category
+                </MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {/* Link to manage categories */}
+              <MuiLink component={Link} to="/categories" underline="hover">
+                Manage categories
+              </MuiLink>
+
+              <TextField
+                label="Monthly limit (MYR)"
+                value={limit}
+                onChange={(e) => setLimit(e.target.value)}
+                sx={{ minWidth: 220 }}
+              />
+
+              <Button
+                variant="contained"
+                onClick={() => save.mutate()}
+                disabled={save.isPending || !categoryId || !limit}
+              >
+                Save budget
+              </Button>
             </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
+
+            {/* Preview for selected pair */}
+            <Divider />
+            <Stack gap={1}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Progress (selected)
+              </Typography>
+              {progress ? (
+                <Stack direction="row" alignItems="center" gap={2}>
+                  <Chip
+                    size="small"
+                    label={catName(categoryId as number) || "—"}
+                    sx={{
+                      bgcolor: catColor(categoryId as number) || "#e5e7eb",
+                      color: "#fff",
+                    }}
+                  />
+                  <Box flex={1}>
+                    <ProgressBar
+                      ratio={Number(progress.ratio)}
+                      color={stateColor}
+                      showPercent
+                    />
+                  </Box>
+                </Stack>
+              ) : (
+                <Typography variant="body2">
+                  No budget configured for this category & month.
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
+        </Paper>
+
+        {/* RIGHT: Filters */}
+        <Paper sx={{ p: 2, height: "100%" }}>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Filters
+          </Typography>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            gap={2}
+            alignItems={{ sm: "center" }}
+          >
+            <MonthPicker value={month} onChange={setMonth} />
+          </Stack>
+        </Paper>
+      </Box>
 
       {/* ---------- Budgets list for the selected month ---------- */}
       <Paper sx={{ p: 2 }}>
@@ -298,7 +302,7 @@ export default function BudgetDashboard() {
                           ratio={Number(p.ratio)}
                           color={barColor}
                           showPercent
-                        /> // single % only
+                        />
                       ) : (
                         "—"
                       )}
