@@ -38,6 +38,8 @@ export default function Categories() {
     ? data
     : data?.results ?? [];
 
+  console.log("Fetched data:", data);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Category | undefined>();
   const [form, setForm] = useState({ name: "", color: "#64748b" });
